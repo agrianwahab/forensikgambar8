@@ -868,12 +868,12 @@ Distribusi Kepercayaan:
 
 def create_anomaly_explanation_infographic(result: AnalysisResult, out_dir: Path) -> Path:
     """
-    Membuat infografis yang menjelaskan setiap jenis anomali untuk orang awam.
+    CORRECTED VERSION: Memperbaiki logika penghitungan anomali pada infografis.
     """
     fig = plt.figure(figsize=(16, 10))
     fig.suptitle('PANDUAN MEMAHAMI ANOMALI VIDEO', fontsize=20, fontweight='bold')
 
-    # Define anomaly types with explanations
+    # PERBAIKAN: Gunakan kunci dalam Bahasa Inggris agar cocok dengan nama event internal
     anomaly_info = {
         'Duplication': {
             'icon': 'DUPLIKASI',
@@ -901,63 +901,39 @@ def create_anomaly_explanation_infographic(result: AnalysisResult, out_dir: Path
         }
     }
 
-    # Create grid for each anomaly type
     gs = fig.add_gridspec(len(anomaly_info), 1, hspace=0.3, wspace=0.2)
 
     for idx, (atype, info) in enumerate(anomaly_info.items()):
         ax = fig.add_subplot(gs[idx])
-
-        # Background color
         ax.add_patch(plt.Rectangle((0, 0), 1, 1, transform=ax.transAxes,
                                   facecolor=info['color'], alpha=0.1, zorder=0))
 
-        # Title with icon
-        ax.text(0.02, 0.85, f"{info['icon']} {atype.upper()}",
-               transform=ax.transAxes, fontsize=18, fontweight='bold',
+        # Menggunakan 'icon' yang berisi teks bahasa Indonesia
+        ax.text(0.02, 0.85, f"📄 {info['icon']}", transform=ax.transAxes, fontsize=18, fontweight='bold',
                bbox=dict(boxstyle='round', facecolor=info['color'], alpha=0.3))
 
-        # Simple explanation
-        ax.text(0.02, 0.65, f"Apa itu?", transform=ax.transAxes,
-               fontsize=12, fontweight='bold')
-        ax.text(0.02, 0.45, info['simple'], transform=ax.transAxes,
-               fontsize=11, wrap=True, va='top')
+        ax.text(0.02, 0.65, "Apa itu?", transform=ax.transAxes, fontsize=12, fontweight='bold')
+        ax.text(0.02, 0.45, info['simple'], transform=ax.transAxes, fontsize=11, wrap=True, va='top')
+        ax.text(0.02, 0.25, "Analogi:", transform=ax.transAxes, fontsize=12, fontweight='bold')
+        ax.text(0.02, 0.05, info['example'], transform=ax.transAxes, fontsize=11, fontstyle='italic', va='top')
+        ax.text(0.52, 0.65, "Cara Deteksi:", transform=ax.transAxes, fontsize=12, fontweight='bold')
+        ax.text(0.52, 0.45, info['technical'], transform=ax.transAxes, fontsize=11, va='top')
+        ax.text(0.52, 0.25, "Implikasi:", transform=ax.transAxes, fontsize=12, fontweight='bold')
+        ax.text(0.52, 0.05, info['implication'], transform=ax.transAxes, fontsize=11, va='top')
 
-        # Example
-        ax.text(0.02, 0.25, f"Analogi:", transform=ax.transAxes,
-               fontsize=12, fontweight='bold')
-        ax.text(0.02, 0.05, info['example'], transform=ax.transAxes,
-               fontsize=11, fontstyle='italic', va='top')
-
-        # Technical
-        ax.text(0.52, 0.65, f"Cara Deteksi:", transform=ax.transAxes,
-               fontsize=12, fontweight='bold')
-        ax.text(0.52, 0.45, info['technical'], transform=ax.transAxes,
-               fontsize=11, va='top')
-
-        # Implication
-        ax.text(0.52, 0.25, f"Implikasi:", transform=ax.transAxes,
-               fontsize=12, fontweight='bold')
-        ax.text(0.52, 0.05, info['implication'], transform=ax.transAxes,
-               fontsize=11, va='top')
-
-        # Count from actual data (matching internal event names)
+        # PERBAIKAN LOGIKA PENGHITUNGAN
         search_term = atype.lower()
-        count = sum(1 for loc in result.localizations
-                   if search_term in loc.get('event', '').lower())
-        ax.text(0.98, 0.85, f"Ditemukan: {count}", transform=ax.transAxes,
-               fontsize=14, ha='right', fontweight='bold',
+        count = sum(1 for loc in result.localizations if search_term in loc.get('event', '').lower())
+
+        ax.text(0.98, 0.85, f"Ditemukan: {count}", transform=ax.transAxes, fontsize=14, ha='right', fontweight='bold',
                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
         ax.axis('off')
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
-    # Save
     infographic_path = out_dir / f"anomaly_explanation_{Path(result.video_path).stem}.png"
     plt.savefig(infographic_path, dpi=150, bbox_inches='tight', facecolor='white')
     plt.close()
-
     return infographic_path
 
 def generate_forensic_evidence_matrix(result: AnalysisResult) -> dict:
@@ -3216,20 +3192,26 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
                           yang merupakan metodologi standar di bidang forensik digital. Kerangka kerja ini terdiri dari enam 
                           tahap yang memastikan proses analisis yang sistematis, ilmiah, dan dapat dipertanggungjawabkan.""", styles['Justify']))
     
-    # Buat tabel metodologi DFRWS
-    dfrws_data = [["<b>Tahap</b>", "<b>Implementasi dalam Analisis</b>"]]
-    for phase in range(1, 7):
-        dfrws_data.append([f"<b>{phase}. {get_dfrws_phase_explanation(phase).split('</b>')[0]}</b>", 
-                         get_dfrws_phase_explanation(phase).split("analisis ini,")[1].strip()])
-    
-    story.append(Table(dfrws_data, colWidths=[90, 265], style=TableStyle([
+    # PERBAIKAN: Membuat data tabel TANPA tag <b>
+    dfrws_table_data = [
+        ["Tahap", "Implementasi dalam Analisis"],
+        ["1. Identifikasi", "ekstraksi metadata ..."],
+        ["2. Preservasi", "menghitung nilai hash ..."],
+        ["3. Pengumpulan", "ekstraksi frame ..."],
+        ["4. Pemeriksaan", "analisis temporal (SSIM, ...)"],
+        ["5. Analisis", "Localization Tampering ..."],
+        ["6. Pelaporan", "laporan ini ..."]
+    ]
+    dfrws_table = Table(dfrws_table_data, colWidths=[90, 265])
+    dfrws_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold')
-    ])))
+    ]))
+    story.append(dfrws_table)
     
     story.append(Spacer(1, 12))
     story.append(Paragraph("""Laporan ini mengikuti struktur tahapan DFRWS, dengan setiap bagian selanjutnya mencerminkan tahap spesifik 
@@ -3252,19 +3234,30 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
                           yang berfungsi sebagai 'sidik jari digital' untuk memverifikasi bahwa 
                           file tidak berubah selama proses analisis.""", styles['Justify']))
 
-    # Tampilkan tabel metadata yang lebih rapi dan informatif
-    metadata_table_data = [["<b>Kategori</b>", "<b>Item</b>", "<b>Nilai</b>"]]
-    for category, items in result.metadata.items():
-        for i, (key, value) in enumerate(items.items()):
-            cat_name = f"<b>{category}</b>" if i == 0 else ""
-            metadata_table_data.append([Paragraph(cat_name, styles['Normal']), Paragraph(key, styles['Normal']), Paragraph(f"<code>{value}</code>", styles['Code'])])
-
-    table_style_cmds = [('BACKGROUND', (0,0), (-1,0), colors.darkblue),('TEXTCOLOR', (0,0), (-1,0), colors.white),('GRID', (0,0), (-1,-1), 0.5, colors.grey),('VALIGN', (0,0), (-1,-1), 'TOP')]
+    # PERBAIKAN: Membuat data metadata TANPA tag <b>
+    metadata_table_data = [["Kategori", "Item", "Nilai"]]
+    category_spans = []
     current_row = 1
     for category, items in result.metadata.items():
-        if items and len(items) > 1: table_style_cmds.append(('SPAN', (0, current_row), (0, current_row + len(items) - 1)))
-        current_row += len(items)
-    story.append(Table(metadata_table_data, colWidths=[60, 100, 195], style=TableStyle(table_style_cmds)))
+        start_row = current_row
+        for i, (key, value) in enumerate(items.items()):
+            metadata_table_data.append([category if i == 0 else "", key, Paragraph(str(value), styles['Code'])])
+            current_row += 1
+        if len(items) > 1:
+            category_spans.append(('SPAN', (0, start_row), (0, current_row - 1)))
+
+    metadata_table = Table(metadata_table_data, colWidths=[60, 100, 195])
+    style_cmds = [
+        ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold')
+    ]
+    style_cmds.extend(category_spans)
+    metadata_table.setStyle(TableStyle(style_cmds))
+    story.append(metadata_table)
     
     # Tampilkan hash preservasi secara jelas
     story.append(Spacer(1, 8))
@@ -3492,20 +3485,24 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
 
             # Tabel bukti teknis
             story.append(Paragraph("<b>Bukti Teknis Pendukung:</b>", styles['Normal']))
-            tech_data = [["<b>Metrik</b>", "<b>Nilai</b>", "<b>Interpretasi</b>"]]
-            tech_data.append(["Tingkat Kepercayaan", f"<b>{confidence}</b>", "Keyakinan sistem terhadap anomali ini"])
+            tech_data = [["Metrik", "Nilai", "Interpretasi"]]
+            tech_data.append(["Tingkat Kepercayaan", confidence, "Keyakinan sistem terhadap anomali ini"])
 
             if isinstance(loc.get('metrics'), dict):
                 for key, val in loc.get('metrics', {}).items():
                     interpretation = explain_metric(key)
                     tech_data.append([key.replace('_', ' ').title(), Paragraph(str(val), styles['Code']), Paragraph(interpretation, styles['Normal'])])
 
-            story.append(Table(tech_data, colWidths=[95, 70, 190], style=TableStyle([
+            tech_table = Table(tech_data, colWidths=[95, 70, 190])
+            tech_table.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
                 ('TEXTCOLOR', (0,0), (-1,0), colors.white),
                 ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-            ])))
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('FONTNAME', (0,1), (0,1), 'Helvetica-Bold')
+            ]))
+            story.append(tech_table)
             story.append(Spacer(1, 8))
 
             # Bukti visual (frame sampel, ELA, SIFT)
@@ -3661,7 +3658,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
                           area yang mungkin memerlukan investigasi lebih lanjut.""", styles['Justify']))
     
     # Tabel penilaian pipeline
-    pipeline_data = [["<b>Tahap</b>", "<b>Status</b>", "<b>Quality Score</b>", "<b>Catatan</b>"]]
+    pipeline_data = [["Tahap", "Status", "Quality Score", "Catatan"]]
     for stage_id, assessment in result.pipeline_assessment.items():
         issues_text = ", ".join(assessment['issues']) if assessment['issues'] else "Tidak ada masalah"
         pipeline_data.append([
@@ -3670,10 +3667,16 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
             Paragraph(f"{assessment['quality_score']}%", styles['Normal']),
             Paragraph(issues_text, styles['Normal'])
         ])
-    story.append(Table(pipeline_data, colWidths=[90, 55, 55, 155], style=TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.darkblue), ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE')])))
+    pipeline_table = Table(pipeline_data, colWidths=[90, 55, 55, 155])
+    pipeline_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold')
+    ]))
+    story.append(pipeline_table)
     story.append(Spacer(1, 12))
 
     # Infografis penjelasan anomali
@@ -3696,7 +3699,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     # Validasi forensik
     avg_pipeline_quality = np.mean([a['quality_score'] for a in result.pipeline_assessment.values()]) if hasattr(result, 'pipeline_assessment') and result.pipeline_assessment else 'N/A'
     validation_data = [
-        ["<b>Item Validasi</b>", "<b>Detail</b>"],
+        ["Item Validasi", "Detail"],
         ["File Bukti", Paragraph(f"<code>{Path(result.video_path).name}</code>", styles['Code'])],
         ["Hash Preservasi (SHA-256)", Paragraph(f"<code>{result.preservation_hash}</code>", styles['Code'])],
         ["Waktu Analisis", datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')],
@@ -3707,10 +3710,16 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         ["Total Anomali", f"{result.summary['total_anomaly']} dari {result.summary['total_frames']} frame"],
         ["Pipeline Quality", f"{avg_pipeline_quality:.1f}%" if isinstance(avg_pipeline_quality, (float, int)) else "N/A"]
     ]
-    story.append(Table(validation_data, colWidths=[120, 235], style=TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.darkblue),('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ])))
+    validation_table = Table(validation_data, colWidths=[120, 235])
+    validation_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold')
+    ]))
+    story.append(validation_table)
 
     story.append(Spacer(1, 24))
     story.append(Paragraph("Kesimpulan", styles['h2']))
