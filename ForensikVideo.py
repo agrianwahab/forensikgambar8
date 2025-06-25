@@ -3221,12 +3221,6 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         ["5. Analisis", "Localization Tampering ..."],
         ["6. Pelaporan", "laporan ini ..."]
     ]
-    dfrws_table = Table(
-        dfrws_table_data,
-        colWidths=[0.25 * available_w, 0.75 * available_w],
-        repeatRows=1,
-    )
-    dfrws_table.keepWithNext = True
     dfrws_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -3270,12 +3264,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         if len(items) > 1:
             category_spans.append(('SPAN', (0, start_row), (0, current_row - 1)))
 
-    metadata_table = Table(
-        metadata_table_data,
-        colWidths=[0.15 * available_w, 0.25 * available_w, 0.60 * available_w],
-        repeatRows=1,
-    )
-    metadata_table.keepWithNext = True
+
     style_cmds = [
         ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -3549,11 +3538,6 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
                     interpretation = explain_metric(key)
                     tech_data.append([key.replace('_', ' ').title(), Paragraph(str(val), styles['Code']), Paragraph(interpretation, styles['Normal'])])
 
-            tech_table = Table(
-                tech_data,
-                colWidths=[0.30 * available_w, 0.20 * available_w, 0.50 * available_w],
-                repeatRows=1,
-            )
             tech_table.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
                 ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -3562,7 +3546,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
                 ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
                 ('FONTNAME', (0,1), (0,1), 'Helvetica-Bold')
             ]))
-            tech_table.keepWithNext = True
+
             story.append(tech_table)
             story.append(Spacer(1, 8))
 
@@ -3738,12 +3722,6 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
             Paragraph(f"{assessment['quality_score']}%", styles['Normal']),
             Paragraph(issues_text, styles['Normal'])
         ])
-    pipeline_table = Table(
-        pipeline_data,
-        colWidths=[0.25 * available_w, 0.15 * available_w, 0.15 * available_w, 0.45 * available_w],
-        repeatRows=1,
-    )
-    pipeline_table.keepWithNext = True
     pipeline_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -3777,10 +3755,6 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     validation_data = [
         ["Item Validasi", "Detail"],
         ["File Bukti", Paragraph(f"<code>{Path(result.video_path).name}</code>", styles['Code'])],
-        [
-            "Hash Preservasi (SHA-256)",
-            Paragraph(f"<code>{break_long(result.preservation_hash)}</code>", styles['Code']),
-        ],
         ["Waktu Analisis", datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')],
         ["Metodologi Utama", "K-Means, Localization Tampering"],
         ["Metode Pendukung", "ELA, SIFT+RANSAC, SSIM, Optical Flow"],
@@ -3789,12 +3763,6 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         ["Total Anomali", f"{result.summary['total_anomaly']} dari {result.summary['total_frames']} frame"],
         ["Pipeline Quality", f"{avg_pipeline_quality:.1f}%" if isinstance(avg_pipeline_quality, (float, int)) else "N/A"]
     ]
-    validation_table = Table(
-        validation_data,
-        colWidths=[0.33 * available_w, 0.67 * available_w],
-        repeatRows=1,
-    )
-    validation_table.keepWithNext = True
     validation_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
