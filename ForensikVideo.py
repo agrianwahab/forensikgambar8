@@ -875,24 +875,24 @@ def create_anomaly_explanation_infographic(result: AnalysisResult, out_dir: Path
 
     # Define anomaly types with explanations
     anomaly_info = {
-        'Duplikasi': {
-            'icon': '🔁',
+        'Duplication': {
+            'icon': 'DUPLIKASI',
             'color': '#FF6B6B',
             'simple': 'Frame yang sama diulang beberapa kali',
             'technical': 'Deteksi melalui perbandingan hash dan SIFT',
             'implication': 'Bisa untuk memperpanjang durasi atau menyembunyikan penghapusan',
             'example': 'Seperti memfotokopi halaman yang sama beberapa kali'
         },
-        'Diskontinuitas': {
-            'icon': '✂️',
+        'Discontinuity': {
+            'icon': 'DISKONTINUITAS',
             'color': '#45B7D1',
             'simple': 'Terjadi "lompatan" atau patahan dalam aliran video',
             'technical': 'Terdeteksi melalui penurunan SSIM dan lonjakan optical flow',
             'implication': 'Indikasi pemotongan atau penyambungan yang kasar',
             'example': 'Seperti halaman yang hilang dalam sebuah buku'
         },
-        'Penyisipan': {
-            'icon': '➕',
+        'Insertion': {
+            'icon': 'PENYISIPAN',
             'color': '#4ECDC4',
             'simple': 'Frame baru yang tidak ada di video asli',
             'technical': 'Terdeteksi melalui perbandingan dengan baseline',
@@ -940,9 +940,10 @@ def create_anomaly_explanation_infographic(result: AnalysisResult, out_dir: Path
         ax.text(0.52, 0.05, info['implication'], transform=ax.transAxes,
                fontsize=11, va='top')
 
-        # Count from actual data
+        # Count from actual data (matching internal event names)
+        search_term = atype.lower()
         count = sum(1 for loc in result.localizations
-                   if atype.lower() in loc.get('event', '').lower())
+                   if search_term in loc.get('event', '').lower())
         ax.text(0.98, 0.85, f"Ditemukan: {count}", transform=ax.transAxes,
                fontsize=14, ha='right', fontweight='bold',
                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
@@ -2945,7 +2946,7 @@ def run_tahap_4_visualisasi_dan_penilaian(result: AnalysisResult, out_dir: Path)
         ax2.set_ylabel("Frekuensi")
     plt.tight_layout()
     metrics_histograms_plot_path = out_dir / f"plot_metrics_histograms_{Path(result.video_path).stem}.png"
-    plt.savefig(metrics_histograms_plot_path, dpi=100)
+    plt.savefig(metrics_histograms_plot_path, dpi=100, bbox_inches='tight')
     plt.close()
     result.plots['metrics_histograms'] = str(metrics_histograms_plot_path)
 
@@ -3221,7 +3222,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         dfrws_data.append([f"<b>{phase}. {get_dfrws_phase_explanation(phase).split('</b>')[0]}</b>", 
                          get_dfrws_phase_explanation(phase).split("analisis ini,")[1].strip()])
     
-    story.append(Table(dfrws_data, colWidths=[100, 280], style=TableStyle([
+    story.append(Table(dfrws_data, colWidths=[90, 265], style=TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
@@ -3263,7 +3264,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     for category, items in result.metadata.items():
         if items and len(items) > 1: table_style_cmds.append(('SPAN', (0, current_row), (0, current_row + len(items) - 1)))
         current_row += len(items)
-    story.append(Table(metadata_table_data, colWidths=[60, 100, 220], style=TableStyle(table_style_cmds)))
+    story.append(Table(metadata_table_data, colWidths=[60, 100, 195], style=TableStyle(table_style_cmds)))
     
     # Tampilkan hash preservasi secara jelas
     story.append(Spacer(1, 8))
@@ -3316,7 +3317,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
 
         cluster_data = [[Paragraph("Palet Warna Dominan", styles['Normal']), Paragraph("Contoh Frame (Asli)", styles['Normal'])],
                         [palette_img, samples_img]]
-        story.append(Table(cluster_data, colWidths=[150, 230], style=TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (-1,-1), 'CENTER')])))
+        story.append(Table(cluster_data, colWidths=[150, 205], style=TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (-1,-1), 'CENTER')])))
         story.append(Spacer(1, 6))
 
         # Interpretasi klaster
@@ -3432,7 +3433,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
             ["Kluster Temporal Anomali", str(result.statistical_summary['temporal_clusters']), "Jumlah kelompok anomali yang terjadi berdekatan"],
             ["Rata-rata Anomali per Kluster", f"{result.statistical_summary.get('average_anomalies_per_cluster', 0):.1f}", "Rata-rata jumlah anomali dalam satu kelompok"]
         ]
-        story.append(Table(stats_table, colWidths=[130, 70, 180], style=TableStyle([
+        story.append(Table(stats_table, colWidths=[120, 60, 175], style=TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
@@ -3499,7 +3500,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
                     interpretation = explain_metric(key)
                     tech_data.append([key.replace('_', ' ').title(), Paragraph(str(val), styles['Code']), Paragraph(interpretation, styles['Normal'])])
 
-            story.append(Table(tech_data, colWidths=[100, 70, 210], style=TableStyle([
+            story.append(Table(tech_data, colWidths=[95, 70, 190], style=TableStyle([
                 ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
                 ('TEXTCOLOR', (0,0), (-1,0), colors.white),
                 ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
@@ -3669,7 +3670,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
             Paragraph(f"{assessment['quality_score']}%", styles['Normal']),
             Paragraph(issues_text, styles['Normal'])
         ])
-    story.append(Table(pipeline_data, colWidths=[95, 60, 60, 165], style=TableStyle([
+    story.append(Table(pipeline_data, colWidths=[90, 55, 55, 155], style=TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.darkblue), ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE')])))
@@ -3706,7 +3707,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         ["Total Anomali", f"{result.summary['total_anomaly']} dari {result.summary['total_frames']} frame"],
         ["Pipeline Quality", f"{avg_pipeline_quality:.1f}%" if isinstance(avg_pipeline_quality, (float, int)) else "N/A"]
     ]
-    story.append(Table(validation_data, colWidths=[130, 250], style=TableStyle([
+    story.append(Table(validation_data, colWidths=[120, 235], style=TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.darkblue),('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
     ])))
