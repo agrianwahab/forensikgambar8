@@ -68,6 +68,7 @@ try:
 
     # Definisi ukuran F5 (148 x 210 mm)
     F5 = (148*mm, 210*mm)
+    PAGE_SIZE = A4
 
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.utils import ImageReader
@@ -83,6 +84,7 @@ try:
     from skimage.metrics import structural_similarity as ssim
     from scipy import stats
     import seaborn as sns
+    import textwrap
 
     # Import untuk ekspor DOCX
     try:
@@ -868,12 +870,12 @@ Distribusi Kepercayaan:
 
 def create_anomaly_explanation_infographic(result: AnalysisResult, out_dir: Path) -> Path:
     """
-    Membuat infografis yang menjelaskan setiap jenis anomali untuk orang awam.
+    CORRECTED VERSION: Memperbaiki logika penghitungan anomali pada infografis.
     """
     fig = plt.figure(figsize=(16, 10))
     fig.suptitle('PANDUAN MEMAHAMI ANOMALI VIDEO', fontsize=20, fontweight='bold')
 
-    # Define anomaly types with explanations
+    # PERBAIKAN: Gunakan kunci dalam Bahasa Inggris agar cocok dengan nama event internal
     anomaly_info = {
         'Duplication': {
             'icon': 'DUPLIKASI',
@@ -901,63 +903,39 @@ def create_anomaly_explanation_infographic(result: AnalysisResult, out_dir: Path
         }
     }
 
-    # Create grid for each anomaly type
     gs = fig.add_gridspec(len(anomaly_info), 1, hspace=0.3, wspace=0.2)
 
     for idx, (atype, info) in enumerate(anomaly_info.items()):
         ax = fig.add_subplot(gs[idx])
-
-        # Background color
         ax.add_patch(plt.Rectangle((0, 0), 1, 1, transform=ax.transAxes,
                                   facecolor=info['color'], alpha=0.1, zorder=0))
 
-        # Title with icon
-        ax.text(0.02, 0.85, f"{info['icon']} {atype.upper()}",
-               transform=ax.transAxes, fontsize=18, fontweight='bold',
+        # Menggunakan 'icon' yang berisi teks bahasa Indonesia
+        ax.text(0.02, 0.85, f"📄 {info['icon']}", transform=ax.transAxes, fontsize=18, fontweight='bold',
                bbox=dict(boxstyle='round', facecolor=info['color'], alpha=0.3))
 
-        # Simple explanation
-        ax.text(0.02, 0.65, f"Apa itu?", transform=ax.transAxes,
-               fontsize=12, fontweight='bold')
-        ax.text(0.02, 0.45, info['simple'], transform=ax.transAxes,
-               fontsize=11, wrap=True, va='top')
+        ax.text(0.02, 0.65, "Apa itu?", transform=ax.transAxes, fontsize=12, fontweight='bold')
+        ax.text(0.02, 0.45, info['simple'], transform=ax.transAxes, fontsize=11, wrap=True, va='top')
+        ax.text(0.02, 0.25, "Analogi:", transform=ax.transAxes, fontsize=12, fontweight='bold')
+        ax.text(0.02, 0.05, info['example'], transform=ax.transAxes, fontsize=11, fontstyle='italic', va='top')
+        ax.text(0.52, 0.65, "Cara Deteksi:", transform=ax.transAxes, fontsize=12, fontweight='bold')
+        ax.text(0.52, 0.45, info['technical'], transform=ax.transAxes, fontsize=11, va='top')
+        ax.text(0.52, 0.25, "Implikasi:", transform=ax.transAxes, fontsize=12, fontweight='bold')
+        ax.text(0.52, 0.05, info['implication'], transform=ax.transAxes, fontsize=11, va='top')
 
-        # Example
-        ax.text(0.02, 0.25, f"Analogi:", transform=ax.transAxes,
-               fontsize=12, fontweight='bold')
-        ax.text(0.02, 0.05, info['example'], transform=ax.transAxes,
-               fontsize=11, fontstyle='italic', va='top')
-
-        # Technical
-        ax.text(0.52, 0.65, f"Cara Deteksi:", transform=ax.transAxes,
-               fontsize=12, fontweight='bold')
-        ax.text(0.52, 0.45, info['technical'], transform=ax.transAxes,
-               fontsize=11, va='top')
-
-        # Implication
-        ax.text(0.52, 0.25, f"Implikasi:", transform=ax.transAxes,
-               fontsize=12, fontweight='bold')
-        ax.text(0.52, 0.05, info['implication'], transform=ax.transAxes,
-               fontsize=11, va='top')
-
-        # Count from actual data (matching internal event names)
+        # PERBAIKAN LOGIKA PENGHITUNGAN
         search_term = atype.lower()
-        count = sum(1 for loc in result.localizations
-                   if search_term in loc.get('event', '').lower())
-        ax.text(0.98, 0.85, f"Ditemukan: {count}", transform=ax.transAxes,
-               fontsize=14, ha='right', fontweight='bold',
+        count = sum(1 for loc in result.localizations if search_term in loc.get('event', '').lower())
+
+        ax.text(0.98, 0.85, f"Ditemukan: {count}", transform=ax.transAxes, fontsize=14, ha='right', fontweight='bold',
                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
         ax.axis('off')
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
-    # Save
     infographic_path = out_dir / f"anomaly_explanation_{Path(result.video_path).stem}.png"
     plt.savefig(infographic_path, dpi=150, bbox_inches='tight', facecolor='white')
     plt.close()
-
     return infographic_path
 
 def generate_forensic_evidence_matrix(result: AnalysisResult) -> dict:
@@ -3106,12 +3084,18 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         }
         return explanations.get(phase, "Penjelasan tidak tersedia untuk tahap ini.")
 
-    doc = SimpleDocTemplate(str(pdf_path), pagesize=F5,
-                          topMargin=10*mm, bottomMargin=10*mm,
-                          leftMargin=10*mm, rightMargin=10*mm)
+    doc = SimpleDocTemplate(
+        str(pdf_path),
+        pagesize=PAGE_SIZE,
+        topMargin=15 * mm,
+        bottomMargin=15 * mm,
+        leftMargin=15 * mm,
+        rightMargin=15 * mm,
+    )
+    available_w = doc.width
     styles = getSampleStyleSheet()
 
-    # Menambahkan style baru untuk laporan yang lebih profesional dengan ukuran font yang disesuaikan untuk F5
+    # Style tambahan untuk laporan pada ukuran halaman A4
     if 'Code' not in styles:
         styles.add(ParagraphStyle(name='Code', fontName='Courier', fontSize=7, leading=9, wordWrap='break'))
     if 'SubTitle' not in styles:
@@ -3137,7 +3121,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     if 'Caption' not in styles:
         styles.add(ParagraphStyle(name='Caption', parent=styles['Normal'], fontName='Helvetica-Oblique', fontSize=8, alignment=1, textColor=colors.darkslategray))
 
-    # Update styles yang sudah ada untuk ukuran F5
+    # Update ukuran font dasar untuk layout A4
     styles['Normal'].fontSize = 9
     styles['Normal'].leading = 11
     styles['h1'].fontSize = 16
@@ -3145,11 +3129,22 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     styles['h3'].fontSize = 11
 
     story = []
+
+    def fit_image(path: str, max_w: float, max_h: float):
+        img = PlatypusImage(path)
+        iw, ih = ImageReader(path).getSize()
+        ratio = min(max_w / iw, max_h / ih, 1.0)
+        img.drawWidth = iw * ratio
+        img.drawHeight = ih * ratio
+        return img
+
+    def break_long(s: str, every: int = 32) -> str:
+        return "<br/>".join(textwrap.wrap(s, every))
     def header_footer(canvas, doc):
         canvas.saveState()
         canvas.setFont('Helvetica', 8)
         canvas.drawString(30, 30, f"Laporan VIFA-Pro | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        canvas.drawRightString(A4[0] - 30, 30, f"Halaman {doc.page}")
+        canvas.drawRightString(doc.pagesize[0] - 30, 30, f"Halaman {doc.page}")
         canvas.restoreState()
 
     # --- HALAMAN SAMPUL ---
@@ -3216,20 +3211,31 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
                           yang merupakan metodologi standar di bidang forensik digital. Kerangka kerja ini terdiri dari enam 
                           tahap yang memastikan proses analisis yang sistematis, ilmiah, dan dapat dipertanggungjawabkan.""", styles['Justify']))
     
-    # Buat tabel metodologi DFRWS
-    dfrws_data = [["<b>Tahap</b>", "<b>Implementasi dalam Analisis</b>"]]
-    for phase in range(1, 7):
-        dfrws_data.append([f"<b>{phase}. {get_dfrws_phase_explanation(phase).split('</b>')[0]}</b>", 
-                         get_dfrws_phase_explanation(phase).split("analisis ini,")[1].strip()])
-    
-    story.append(Table(dfrws_data, colWidths=[90, 265], style=TableStyle([
+    # PERBAIKAN: Membuat data tabel TANPA tag <b>
+    dfrws_table_data = [
+        ["Tahap", "Implementasi dalam Analisis"],
+        ["1. Identifikasi", "ekstraksi metadata ..."],
+        ["2. Preservasi", "menghitung nilai hash ..."],
+        ["3. Pengumpulan", "ekstraksi frame ..."],
+        ["4. Pemeriksaan", "analisis temporal (SSIM, ...)"],
+        ["5. Analisis", "Localization Tampering ..."],
+        ["6. Pelaporan", "laporan ini ..."]
+    ]
+    dfrws_table = Table(
+        dfrws_table_data,
+        colWidths=[0.25 * available_w, 0.75 * available_w],
+        repeatRows=1,
+    )
+    dfrws_table.keepWithNext = True
+    dfrws_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold')
-    ])))
+    ]))
+    story.append(dfrws_table)
     
     story.append(Spacer(1, 12))
     story.append(Paragraph("""Laporan ini mengikuti struktur tahapan DFRWS, dengan setiap bagian selanjutnya mencerminkan tahap spesifik 
@@ -3252,23 +3258,42 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
                           yang berfungsi sebagai 'sidik jari digital' untuk memverifikasi bahwa 
                           file tidak berubah selama proses analisis.""", styles['Justify']))
 
-    # Tampilkan tabel metadata yang lebih rapi dan informatif
-    metadata_table_data = [["<b>Kategori</b>", "<b>Item</b>", "<b>Nilai</b>"]]
-    for category, items in result.metadata.items():
-        for i, (key, value) in enumerate(items.items()):
-            cat_name = f"<b>{category}</b>" if i == 0 else ""
-            metadata_table_data.append([Paragraph(cat_name, styles['Normal']), Paragraph(key, styles['Normal']), Paragraph(f"<code>{value}</code>", styles['Code'])])
-
-    table_style_cmds = [('BACKGROUND', (0,0), (-1,0), colors.darkblue),('TEXTCOLOR', (0,0), (-1,0), colors.white),('GRID', (0,0), (-1,-1), 0.5, colors.grey),('VALIGN', (0,0), (-1,-1), 'TOP')]
+    # PERBAIKAN: Membuat data metadata TANPA tag <b>
+    metadata_table_data = [["Kategori", "Item", "Nilai"]]
+    category_spans = []
     current_row = 1
     for category, items in result.metadata.items():
-        if items and len(items) > 1: table_style_cmds.append(('SPAN', (0, current_row), (0, current_row + len(items) - 1)))
-        current_row += len(items)
-    story.append(Table(metadata_table_data, colWidths=[60, 100, 195], style=TableStyle(table_style_cmds)))
+        start_row = current_row
+        for i, (key, value) in enumerate(items.items()):
+            metadata_table_data.append([category if i == 0 else "", key, Paragraph(str(value), styles['Code'])])
+            current_row += 1
+        if len(items) > 1:
+            category_spans.append(('SPAN', (0, start_row), (0, current_row - 1)))
+
+    metadata_table = Table(
+        metadata_table_data,
+        colWidths=[0.15 * available_w, 0.25 * available_w, 0.60 * available_w],
+        repeatRows=1,
+    )
+    metadata_table.keepWithNext = True
+    style_cmds = [
+        ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold')
+    ]
+    style_cmds.extend(category_spans)
+    metadata_table.setStyle(TableStyle(style_cmds))
+    story.append(metadata_table)
     
     # Tampilkan hash preservasi secara jelas
     story.append(Spacer(1, 8))
-    story.append(Paragraph(f"<b>Hash SHA-256 Preservasi:</b> {result.preservation_hash}", styles['HighlightBox']))
+    story.append(Paragraph(
+        f"<b>Hash SHA-256 Preservasi:</b> {break_long(result.preservation_hash)}",
+        styles['HighlightBox'],
+    ))
     story.append(Spacer(1, 12))
 
     story.append(Paragraph("<b>1.2. Pengumpulan: Ekstraksi dan Normalisasi Frame</b>", styles['SectionHeader']))
@@ -3285,7 +3310,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     
     # Tampilkan contoh frame yang dinormalisasi
     if result.frames and result.frames[0].img_path_comparison and Path(result.frames[0].img_path_comparison).exists():
-        story.append(PlatypusImage(result.frames[0].img_path_comparison, width=380, height=107, kind='proportional'))
+        story.append(fit_image(result.frames[0].img_path_comparison, available_w, 110))
         story.append(Paragraph("Perbandingan frame asli (kiri) dengan frame yang telah dinormalisasi (kanan). Normalisasi meningkatkan kontras dan detail visual untuk analisis yang lebih konsisten.", styles['Caption']))
     story.append(Spacer(1, 12))
 
@@ -3303,7 +3328,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     
     # Tampilkan distribusi K-Means
     if result.kmeans_artifacts.get('distribution_plot_path') and Path(result.kmeans_artifacts['distribution_plot_path']).exists():
-        story.append(PlatypusImage(result.kmeans_artifacts['distribution_plot_path'], width=320, height=117, kind='proportional'))
+        story.append(fit_image(result.kmeans_artifacts['distribution_plot_path'], available_w, 120))
         story.append(Paragraph("Distribusi jumlah frame untuk setiap klaster warna yang teridentifikasi oleh algoritma K-Means.", styles['Caption']))
     story.append(Spacer(1, 12))
     
@@ -3312,12 +3337,29 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     for cluster_info in result.kmeans_artifacts.get('clusters', []):
         story.append(Paragraph(f"<b>Klaster {cluster_info['id']}</b> ({cluster_info['count']} frame)", styles['H3-Box']))
 
-        palette_img = PlatypusImage(cluster_info['palette_path'], width=150, height=38) if cluster_info.get('palette_path') and Path(cluster_info['palette_path']).exists() else Paragraph("N/A", styles['Normal'])
-        samples_img = PlatypusImage(cluster_info['samples_montage_path'], width=230, height=41) if cluster_info.get('samples_montage_path') and Path(cluster_info['samples_montage_path']).exists() else Paragraph("N/A", styles['Normal'])
+        palette_img = (
+            fit_image(cluster_info['palette_path'], 0.45 * available_w, 50)
+            if cluster_info.get('palette_path') and Path(cluster_info['palette_path']).exists()
+            else Paragraph("N/A", styles['Normal'])
+        )
+        samples_img = (
+            fit_image(cluster_info['samples_montage_path'], 0.55 * available_w, 60)
+            if cluster_info.get('samples_montage_path') and Path(cluster_info['samples_montage_path']).exists()
+            else Paragraph("N/A", styles['Normal'])
+        )
 
-        cluster_data = [[Paragraph("Palet Warna Dominan", styles['Normal']), Paragraph("Contoh Frame (Asli)", styles['Normal'])],
-                        [palette_img, samples_img]]
-        story.append(Table(cluster_data, colWidths=[150, 205], style=TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (-1,-1), 'CENTER')])))
+        cluster_data = [
+            [Paragraph("Palet Warna Dominan", styles['Normal']), Paragraph("Contoh Frame (Asli)", styles['Normal'])],
+            [palette_img, samples_img],
+        ]
+        cluster_tbl = Table(
+            cluster_data,
+            colWidths=[0.45 * available_w, 0.55 * available_w],
+            repeatRows=1,
+        )
+        cluster_tbl.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (-1,-1), 'CENTER')]))
+        cluster_tbl.keepWithNext = True
+        story.append(cluster_tbl)
         story.append(Spacer(1, 6))
 
         # Interpretasi klaster
@@ -3348,7 +3390,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     
     # Tampilkan plot K-Means temporal
     if result.plots.get('kmeans_temporal') and Path(result.plots['kmeans_temporal']).exists():
-        story.append(PlatypusImage(result.plots['kmeans_temporal'], width=380, height=142, kind='proportional'))
+        story.append(fit_image(result.plots['kmeans_temporal'], available_w, 150))
         story.append(Paragraph("Visualisasi temporal klaster K-Means. Garis vertikal merah menandakan perpindahan klaster warna yang dapat mengindikasikan perubahan adegan.", styles['Caption']))
     story.append(Spacer(1, 12))
 
@@ -3366,7 +3408,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     
     # Tampilkan plot SSIM
     if result.plots.get('ssim_temporal') and Path(result.plots['ssim_temporal']).exists():
-        story.append(PlatypusImage(result.plots['ssim_temporal'], width=380, height=142, kind='proportional'))
+        story.append(fit_image(result.plots['ssim_temporal'], available_w, 150))
         story.append(Paragraph("Grafik SSIM sepanjang video. Titik merah menandakan lokasi di mana terjadi penurunan SSIM yang mencurigakan.", styles['Caption']))
     story.append(Spacer(1, 12))
 
@@ -3384,7 +3426,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     
     # Tampilkan plot Optical Flow
     if result.plots.get('optical_flow_temporal') and Path(result.plots['optical_flow_temporal']).exists():
-        story.append(PlatypusImage(result.plots['optical_flow_temporal'], width=380, height=142, kind='proportional'))
+        story.append(fit_image(result.plots['optical_flow_temporal'], available_w, 150))
         story.append(Paragraph("Grafik magnitudo Aliran Optik sepanjang video. Titik hijau menandakan lokasi dengan lonjakan gerakan yang tidak wajar.", styles['Caption']))
     story.append(Spacer(1, 12))
 
@@ -3406,7 +3448,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         story.append(Paragraph("""Histogram di bawah ini menunjukkan distribusi statistik dari nilai SSIM dan Aliran Optik 
                              di seluruh video. Distribusi ini membantu mengidentifikasi nilai-nilai yang menonjol dari 
                              pola normal, yang dapat mengindikasikan anomali.""", styles['Justify']))
-        story.append(PlatypusImage(result.plots['metrics_histograms'], width=380, height=110, kind='proportional'))
+        story.append(fit_image(result.plots['metrics_histograms'], available_w, 120))
         story.append(Paragraph("Histogram distribusi nilai SSIM (kiri) dan Aliran Optik (kanan). Nilai yang sangat jauh dari distribusi utama sering mengindikasikan anomali.", styles['Caption']))
 
     story.append(PageBreak())
@@ -3433,13 +3475,20 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
             ["Kluster Temporal Anomali", str(result.statistical_summary['temporal_clusters']), "Jumlah kelompok anomali yang terjadi berdekatan"],
             ["Rata-rata Anomali per Kluster", f"{result.statistical_summary.get('average_anomalies_per_cluster', 0):.1f}", "Rata-rata jumlah anomali dalam satu kelompok"]
         ]
-        story.append(Table(stats_table, colWidths=[120, 60, 175], style=TableStyle([
+        stats_tbl = Table(
+            stats_table,
+            colWidths=[0.30 * available_w, 0.15 * available_w, 0.55 * available_w],
+            repeatRows=1,
+        )
+        stats_tbl.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
             ('ALIGN', (0,0), (-1,-1), 'LEFT'),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-        ])))
+        ]))
+        stats_tbl.keepWithNext = True
+        story.append(stats_tbl)
         story.append(Spacer(1, 12))
 
     # Tampilkan visualisasi ringkasan anomali
@@ -3448,7 +3497,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         story.append(Paragraph("""Visualisasi di bawah ini memberikan gambaran komprehensif tentang distribusi jenis 
                              anomali, tingkat kepercayaan deteksi, dan bagaimana anomali tersebut terdistribusi 
                              sepanjang timeline video.""", styles['Justify']))
-        story.append(PlatypusImage(result.plots['anomaly_summary'], width=380, height=255, kind='proportional'))
+        story.append(fit_image(result.plots['anomaly_summary'], available_w, 260))
         story.append(Paragraph("Ringkasan visual analisis anomali, menunjukkan distribusi jenis anomali, tingkat kepercayaan, timeline, dan statistik kunci.", styles['Caption']))
         story.append(Spacer(1, 12))
 
@@ -3492,20 +3541,29 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
 
             # Tabel bukti teknis
             story.append(Paragraph("<b>Bukti Teknis Pendukung:</b>", styles['Normal']))
-            tech_data = [["<b>Metrik</b>", "<b>Nilai</b>", "<b>Interpretasi</b>"]]
-            tech_data.append(["Tingkat Kepercayaan", f"<b>{confidence}</b>", "Keyakinan sistem terhadap anomali ini"])
+            tech_data = [["Metrik", "Nilai", "Interpretasi"]]
+            tech_data.append(["Tingkat Kepercayaan", confidence, "Keyakinan sistem terhadap anomali ini"])
 
             if isinstance(loc.get('metrics'), dict):
                 for key, val in loc.get('metrics', {}).items():
                     interpretation = explain_metric(key)
                     tech_data.append([key.replace('_', ' ').title(), Paragraph(str(val), styles['Code']), Paragraph(interpretation, styles['Normal'])])
 
-            story.append(Table(tech_data, colWidths=[95, 70, 190], style=TableStyle([
+            tech_table = Table(
+                tech_data,
+                colWidths=[0.30 * available_w, 0.20 * available_w, 0.50 * available_w],
+                repeatRows=1,
+            )
+            tech_table.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
                 ('TEXTCOLOR', (0,0), (-1,0), colors.white),
                 ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-            ])))
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('FONTNAME', (0,1), (0,1), 'Helvetica-Bold')
+            ]))
+            tech_table.keepWithNext = True
+            story.append(tech_table)
             story.append(Spacer(1, 8))
 
             # Bukti visual (frame sampel, ELA, SIFT)
@@ -3515,30 +3573,37 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
             v_headers, v_evidence = [], []
             if loc.get('image') and Path(loc['image']).exists():
                 v_headers.append("<b>Sampel Frame (Asli)</b>")
-                v_evidence.append(PlatypusImage(loc['image'], width=180, height=101, kind='proportional'))
+                v_evidence.append(fit_image(loc['image'], available_w / 2, 105))
             if loc.get('ela_path') and Path(loc['ela_path']).exists():
                 v_headers.append("<b>Analisis Kompresi (ELA)</b>")
-                v_evidence.append(PlatypusImage(loc['ela_path'], width=180, height=101, kind='proportional'))
+                v_evidence.append(fit_image(loc['ela_path'], available_w / 2, 105))
             
             if v_evidence:
-                story.append(Table([v_headers, v_evidence], colWidths=[190]*len(v_headers), style=[('ALIGN',(0,0),(-1,-1),'CENTER')]))
+                img_table = Table(
+                    [v_headers, v_evidence],
+                    colWidths=[available_w / len(v_headers)] * len(v_headers),
+                    repeatRows=1,
+                )
+                img_table.setStyle([('ALIGN', (0,0), (-1,-1), 'CENTER')])
+                img_table.keepWithNext = True
+                story.append(img_table)
                 story.append(Paragraph("Kiri: Frame dari lokasi anomali. Kanan: Error Level Analysis menunjukkan area dengan level kompresi berbeda (terang = potensi manipulasi).", styles['Caption']))
                 story.append(Spacer(1, 6))
 
             # Visualisasi tambahan (ELA detail, SIFT heatmap)
             if loc.get('visualizations'):
                 if loc['visualizations'].get('ela_detailed') and Path(loc['visualizations']['ela_detailed']).exists():
-                    story.append(PlatypusImage(loc['visualizations']['ela_detailed'], width=380, height=131, kind='proportional'))
+                    story.append(fit_image(loc['visualizations']['ela_detailed'], available_w, 135))
                     story.append(Paragraph("Analisis ELA Detail: Perbandingan frame asli (kiri) dengan visualisasi ELA (kanan). Kotak merah menandai area dengan potensi manipulasi.", styles['Caption']))
                     story.append(Spacer(1, 6))
-                    
+
                 if loc['visualizations'].get('sift_heatmap') and Path(loc['visualizations']['sift_heatmap']).exists():
-                    story.append(PlatypusImage(loc['visualizations']['sift_heatmap'], width=380, height=117, kind='proportional'))
+                    story.append(fit_image(loc['visualizations']['sift_heatmap'], available_w, 120))
                     story.append(Paragraph("Heatmap SIFT: Visualisasi kepadatan titik-titik fitur yang cocok, menunjukkan area dengan kecocokan tinggi (merah) vs. rendah (biru).", styles['Caption']))
                     story.append(Spacer(1, 6))
                     
             if loc.get('sift_path') and Path(loc.get('sift_path')).exists():
-                story.append(PlatypusImage(loc.get('sift_path'), width=380, height=117, kind='proportional'))
+                story.append(fit_image(loc.get('sift_path'), available_w, 120))
                 story.append(Paragraph("Bukti Pencocokan Fitur (SIFT+RANSAC): Garis hijau menghubungkan fitur-fitur yang cocok antara dua frame, menunjukkan bukti duplikasi.", styles['Caption']))
                 story.append(Spacer(1, 6))
 
@@ -3593,7 +3658,10 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         text_color = colors.darkred
 
     # Buat tabel dengan styling
-    reliability_table = Table([[reliability]], colWidths=[300])
+    reliability_table = Table(
+        [[reliability]],
+        colWidths=[available_w],
+    )
     reliability_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (0, 0), bg_color),
         ('TEXTCOLOR', (0, 0), (0, 0), text_color),
@@ -3611,12 +3679,12 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
 
     # Tampilkan visualisasi FERM jika tersedia
     if result.plots.get('ferm_evidence_strength') and Path(result.plots['ferm_evidence_strength']).exists():
-        story.append(PlatypusImage(result.plots['ferm_evidence_strength'], width=380, height=234, kind='proportional'))
+        story.append(fit_image(result.plots['ferm_evidence_strength'], available_w, 240))
         story.append(Paragraph("Heatmap Kekuatan Bukti FERM: Menunjukkan efektivitas relatif dari berbagai metode deteksi untuk setiap jenis anomali.", styles['Caption']))
         story.append(Spacer(1, 12))
-        
+
     if result.plots.get('ferm_reliability') and Path(result.plots['ferm_reliability']).exists():
-        story.append(PlatypusImage(result.plots['ferm_reliability'], width=380, height=204, kind='proportional'))
+        story.append(fit_image(result.plots['ferm_reliability'], available_w, 210))
         story.append(Paragraph("Grafik Faktor Reliabilitas: Menunjukkan faktor-faktor yang berkontribusi positif atau negatif terhadap penilaian keandalan bukti keseluruhan.", styles['Caption']))
         story.append(Spacer(1, 12))
 
@@ -3651,7 +3719,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     
     # Tampilkan peta lokalisasi
     if result.plots.get('enhanced_localization_map') and Path(result.plots['enhanced_localization_map']).exists():
-        story.append(PlatypusImage(result.plots['enhanced_localization_map'], width=380, height=255, kind='proportional'))
+        story.append(fit_image(result.plots['enhanced_localization_map'], available_w, 260))
         story.append(Paragraph("Peta lokalisasi tampering dengan timeline, statistik, dan tingkat kepercayaan, menunjukkan di mana dan bagaimana manipulasi potensial terjadi dalam video.", styles['Caption']))
     story.append(Spacer(1, 12))
 
@@ -3661,7 +3729,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
                           area yang mungkin memerlukan investigasi lebih lanjut.""", styles['Justify']))
     
     # Tabel penilaian pipeline
-    pipeline_data = [["<b>Tahap</b>", "<b>Status</b>", "<b>Quality Score</b>", "<b>Catatan</b>"]]
+    pipeline_data = [["Tahap", "Status", "Quality Score", "Catatan"]]
     for stage_id, assessment in result.pipeline_assessment.items():
         issues_text = ", ".join(assessment['issues']) if assessment['issues'] else "Tidak ada masalah"
         pipeline_data.append([
@@ -3670,10 +3738,21 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
             Paragraph(f"{assessment['quality_score']}%", styles['Normal']),
             Paragraph(issues_text, styles['Normal'])
         ])
-    story.append(Table(pipeline_data, colWidths=[90, 55, 55, 155], style=TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.darkblue), ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE')])))
+    pipeline_table = Table(
+        pipeline_data,
+        colWidths=[0.25 * available_w, 0.15 * available_w, 0.15 * available_w, 0.45 * available_w],
+        repeatRows=1,
+    )
+    pipeline_table.keepWithNext = True
+    pipeline_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold')
+    ]))
+    story.append(pipeline_table)
     story.append(Spacer(1, 12))
 
     # Infografis penjelasan anomali
@@ -3682,7 +3761,7 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         story.append(Paragraph("""Infografis di bawah ini memberikan penjelasan visual tentang berbagai jenis anomali 
                              yang dapat dideteksi oleh sistem, termasuk definisi sederhana, metode deteksi, dan implikasi 
                              forensik. Ini membantu pengguna non-teknis memahami temuan-temuan dalam laporan.""", styles['Justify']))
-        story.append(PlatypusImage(result.plots['anomaly_infographic'], width=380, height=238, kind='proportional'))
+        story.append(fit_image(result.plots['anomaly_infographic'], available_w, 240))
         story.append(Paragraph("Infografis yang menjelaskan setiap jenis anomali dengan bahasa sederhana, metode deteksi, dan implikasi forensiknya.", styles['Caption']))
 
     story.append(PageBreak())
@@ -3696,9 +3775,12 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
     # Validasi forensik
     avg_pipeline_quality = np.mean([a['quality_score'] for a in result.pipeline_assessment.values()]) if hasattr(result, 'pipeline_assessment') and result.pipeline_assessment else 'N/A'
     validation_data = [
-        ["<b>Item Validasi</b>", "<b>Detail</b>"],
+        ["Item Validasi", "Detail"],
         ["File Bukti", Paragraph(f"<code>{Path(result.video_path).name}</code>", styles['Code'])],
-        ["Hash Preservasi (SHA-256)", Paragraph(f"<code>{result.preservation_hash}</code>", styles['Code'])],
+        [
+            "Hash Preservasi (SHA-256)",
+            Paragraph(f"<code>{break_long(result.preservation_hash)}</code>", styles['Code']),
+        ],
         ["Waktu Analisis", datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')],
         ["Metodologi Utama", "K-Means, Localization Tampering"],
         ["Metode Pendukung", "ELA, SIFT+RANSAC, SSIM, Optical Flow"],
@@ -3707,10 +3789,21 @@ def run_tahap_5_pelaporan_dan_validasi(result: AnalysisResult, out_dir: Path, ba
         ["Total Anomali", f"{result.summary['total_anomaly']} dari {result.summary['total_frames']} frame"],
         ["Pipeline Quality", f"{avg_pipeline_quality:.1f}%" if isinstance(avg_pipeline_quality, (float, int)) else "N/A"]
     ]
-    story.append(Table(validation_data, colWidths=[120, 235], style=TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.darkblue),('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ])))
+    validation_table = Table(
+        validation_data,
+        colWidths=[0.33 * available_w, 0.67 * available_w],
+        repeatRows=1,
+    )
+    validation_table.keepWithNext = True
+    validation_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold')
+    ]))
+    story.append(validation_table)
 
     story.append(Spacer(1, 24))
     story.append(Paragraph("Kesimpulan", styles['h2']))
